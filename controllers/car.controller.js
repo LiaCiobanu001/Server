@@ -1,4 +1,4 @@
-import Property from "../mongodb/models/property.js";
+import Car from "../mongodb/models/car.js";
 import User from "../mongodb/models/user.js";
 
 import mongoose from "mongoose";
@@ -13,20 +13,21 @@ cloudinary.config({
     api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const getAllProperties = async (req, res) => {
+//functia pt cautarea tuturor masinilor
+const getAllCars = async (req, res) => {
     const {
         _end,
         _order,
         _start,
         _sort,
         title_like = "",
-        propertyType = "",
+        carType = "",
     } = req.query;
 
     const query = {};
 
-    if (propertyType !== "") {
-        query.propertyType = propertyType;
+    if (carType !== "") {
+        query.carType = carType;
     }
 
     if (title_like) {
@@ -34,9 +35,9 @@ const getAllProperties = async (req, res) => {
     }
 
     try {
-        const count = await Property.countDocuments({ query });
+        const count = await Car.countDocuments({ query });
 
-        const properties = await Property.find(query)
+        const cars = await Car.find(query)
             .limit(_end)
             .skip(_start)
             .sort({ [_sort]: _order });
@@ -44,31 +45,33 @@ const getAllProperties = async (req, res) => {
         res.header("x-total-count", count);
         res.header("Access-Control-Expose-Headers", "x-total-count");
 
-        res.status(200).json(properties);
+        res.status(200).json(cars);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-const getPropertyDetail = async (req, res) => {
+// functia pt afisarea detaliilor masinilor
+const getCarDetail = async (req, res) => {
     const { id } = req.params;
-    const propertyExists = await Property.findOne({ _id: id }).populate(
+    const carExists = await Car.findOne({ _id: id }).populate(
         "creator",
     );
 
-    if (propertyExists) {
-        res.status(200).json(propertyExists);
+    if (carExists) {
+        res.status(200).json(carExists);
     } else {
-        res.status(404).json({ message: "Property not found" });
+        res.status(404).json({ message: "Car not found" });
     }
 };
 
-const createProperty = async (req, res) => {
+//functia pentru crearea masinii
+const createCar = async (req, res) => {
     try {
         const {
             title,
             description,
-            propertyType,
+            carType,
             location,
             price,
             photo,
@@ -84,82 +87,84 @@ const createProperty = async (req, res) => {
 
         const photoUrl = await cloudinary.uploader.upload(photo);
 
-        const newProperty = await Property.create({
+        const newCar = await Car.create({
             title,
             description,
-            propertyType,
+            carType,
             location,
             price,
             photo: photoUrl.url,
             creator: user._id,
         });
 
-        user.allProperties.push(newProperty._id);
+        user.allCars.push(newCar._id);
         await user.save({ session });
 
         await session.commitTransaction();
 
-        res.status(200).json({ message: "Property created successfully" });
+        res.status(200).json({ message: "Car created successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-const updateProperty = async (req, res) => {
+//functie pentru update masina
+const updateCar = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, propertyType, location, price, photo } =
+        const { title, description, carType, location, price, photo } =
             req.body;
 
         const photoUrl = await cloudinary.uploader.upload(photo);
 
-        await Property.findByIdAndUpdate(
+        await Car.findByIdAndUpdate(
             { _id: id },
             {
                 title,
                 description,
-                propertyType,
+                carType,
                 location,
                 price,
                 photo: photoUrl.url || photo,
             },
         );
 
-        res.status(200).json({ message: "Property updated successfully" });
+        res.status(200).json({ message: "Cae updated successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
-const deleteProperty = async (req, res) => {
+//functia pentru stergerea masinii
+const deleteCar = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const propertyToDelete = await Property.findById({ _id: id }).populate(
+        const carToDelete = await Car.findById({ _id: id }).populate(
             "creator",
         );
 
-        if (!propertyToDelete) throw new Error("Property not found");
+        if (!carToDelete) throw new Error("Car not found");
 
         const session = await mongoose.startSession();
         session.startTransaction();
 
-        propertyToDelete.remove({ session });
-        propertyToDelete.creator.allProperties.pull(propertyToDelete);
+        carToDelete.remove({ session });
+        carToDelete.creator.allCars.pull(carToDelete);
 
-        await propertyToDelete.creator.save({ session });
+        await carToDelete.creator.save({ session });
         await session.commitTransaction();
 
-        res.status(200).json({ message: "Property deleted successfully" });
+        res.status(200).json({ message: "Car deleted successfully" });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
 };
 
 export {
-    getAllProperties,
-    getPropertyDetail,
-    createProperty,
-    updateProperty,
-    deleteProperty,
+    getAllCars,
+    getCarDetail,
+    createCar,
+    updateCar,
+    deleteCar,
 };

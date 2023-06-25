@@ -1,5 +1,6 @@
 import User from "../mongodb/models/user.js";
 
+//functia pt cautarea tuturor userilor
 const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({}).limit(req.query._end);
@@ -10,6 +11,7 @@ const getAllUsers = async (req, res) => {
     }
 };
 
+//functia pt crearea user ilor
 const createUser = async (req, res) => {
     try {
         const { name, email, avatar } = req.body;
@@ -30,11 +32,12 @@ const createUser = async (req, res) => {
     }
 };
 
+//functie pt cautarea userilor dupa id
 const getUserInfoByID = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const user = await User.findOne({ _id: id }).populate("allProperties");
+        const user = await User.findOne({ _id: id }).populate("allCars");
 
         if (user) {
             res.status(200).json(user);

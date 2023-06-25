@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 
+//functia de conexiune baza de date
 const connectDB = (url) => {
     mongoose.set("strictQuery", true);
 
